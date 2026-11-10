@@ -22,7 +22,7 @@ Manage PHP and other server settings strictly per site. Never change the server-
 ## 3. Create the CWP account
 - Create the account, then confirm the actual username. CWP may silently truncate usernames (often to 8 characters).
 - Create a MySQL database and user with full privileges, host usually `localhost`. Use a short database and username if possible; CWP password resets on long names can fail with an "Invalid userdata" error.
-- Set PHP for this domain only. If PHP misbehaves, copy `php.ini` and `.user.ini` from a known-good account on the same server. Do not change the source account, the server default, or other sites.
+- Set PHP for this domain only. Copy `php.ini` and `.user.ini` from a known-good account on the same server into the new account's document root. Do not change the source account, the server default, or other sites.
 
 ## 4. Lock in email DNS immediately
 Do this as soon as the account exists, before anything else public can depend on the new zone.
