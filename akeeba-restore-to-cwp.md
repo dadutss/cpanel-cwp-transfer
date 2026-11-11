@@ -22,19 +22,21 @@ Manage PHP and other server settings strictly per site. Never change the server-
 ## 3. Create the CWP account
 - Create the account, then confirm the actual username. CWP may silently truncate usernames (often to 8 characters).
 - Create a MySQL database and user with full privileges, host usually `localhost`. Use a short database and username if possible; CWP password resets on long names can fail with an "Invalid userdata" error.
-- Set PHP for this domain only. If PHP misbehaves, copy `php.ini` and `.user.ini` from a known-good account on the same server. Do not change the source account, the server default, or other sites.
+- Set PHP for this domain only. Copy `php.ini` and `.user.ini` from a known-good account on the same server into the new account's document root. Do not change the source account, the server default, or other sites.
 
 ## 4. Lock in email DNS immediately
 Do this as soon as the account exists, before anything else public can depend on the new zone.
 - CWP auto-creates a zone whose default MX/SPF can break off-box mail (MX pointing at the domain itself, or targets missing trailing dots like `mx1.example.com.thedomain.com`, and an SPF for the new server IP).
 - In the DNS Editor, use Edit File rather than Edit Records. Put trailing dots on MX and CNAME targets.
 - Keep the existing off-box MX, SPF, DKIM, DMARC, and Mailgun records. Leave live website A/www records on the old server.
-- Reload the zone, then confirm what public resolvers actually serve — not just the CWP file. If the DNS host's public nameservers ingested the auto-created zone at account creation but do not pick up later edits, have them serve the current zone from the new server, and do not call mail done until public SOA, MX, and SPF match the corrected file.
+- Reload the zone, then push it to InMotion public nameservers with `/opt/imh-cwp-dns/update_zone <domain>` on the CWP server. Replace `<domain>` with the domain you just changed, for example `/opt/imh-cwp-dns/update_zone example.com`. CWP reload alone is not enough. Confirm what public resolvers actually serve — not just the CWP file. If the command is unavailable or the public SOA still lags, have InMotion serve the current zone from the new server, and do not call mail done until public SOA, MX, and SPF match the corrected file.
+- If the domain's nameservers have been moved off InMotion to an external DNS host (for example Cloudflare or Porkbun), edit and publish the zone there instead, and skip the InMotion push command.
 - If public DNS is split after the authoritative zone is fixed, request a cache flush at major public resolvers (for example Google Public DNS and Cloudflare 1.1.1.1). Other ISP caches will expire on their own with the TTL.
 
 ## 5. Add the preview hostname
 - Add a temporary subdomain `new.<domain>` on the new account, with the same document root as the site (not a subdirectory).
 - Point only that subdomain's A record at the new server. Leave live apex and `www` on the old server.
+- After adding that record in CWP, push the zone with `/opt/imh-cwp-dns/update_zone <domain>` and confirm the hostname resolves publicly before relying on it.
 - Attach it to the same per-domain PHP as the site will use, and issue SSL for it when the hostname resolves.
 
 ## 6. Upload Kickstart and the archive
@@ -61,7 +63,7 @@ Do this as soon as the account exists, before anything else public can depend on
 ## 10. Cut over web DNS only
 - Only after the preview checks out and public mail DNS is correct, switch the web A/AAAA records (and `ftp`/`www` if they follow the site). `www` may stay a CNAME to the apex.
 - Leave Rackspace, Mailgun, and other external mail records untouched unless the owner asked to move mail.
-- Recheck public resolvers and flush public caches if they are still split. After cutover, issue or renew SSL for the live hostnames if needed.
+- After the CWP zone edit, bump the serial, reload, and push the zone with `/opt/imh-cwp-dns/update_zone <domain>`. Recheck public resolvers and flush public caches if they are still split. After cutover, issue or renew SSL for the live hostnames if needed.
 - After cutover, the temporary `new.<domain>` subdomain can be removed, and Kickstart plus the archive can be removed from `public_html` so they are not left publicly reachable, both with the owner's approval.
 
 ## CWP admin notes
